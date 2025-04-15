@@ -19,7 +19,10 @@ class QueueService {
     });
 
     // Limpa a fila ao iniciar (para desenvolvimento)
-    await this.domainQueue.empty();
+    if (process.env.NODE_ENV !== 'production') {
+      await this.domainQueue.empty();
+      console.log('Queue cleared (development mode)');
+    }
 
     // Registra o process handler aqui mesmo
     this.domainQueue.process(MAX_CONCURRENT_JOBS, async (job) => {
@@ -52,6 +55,7 @@ class QueueService {
         return { domain, hasGTM, gtmCode, fromCache: false };
       } catch (error) {
         console.error(`Error processing domain ${domain}:`, error);
+        await DomainService.createOrUpdateDomain(domain, false, null);
         throw error;
       }
     });

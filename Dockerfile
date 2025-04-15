@@ -1,4 +1,4 @@
-FROM node:16-slim
+FROM node:20
 
 # Variáveis para não pedir confirmação durante instalação
 ENV DEBIAN_FRONTEND=noninteractive
@@ -49,4 +49,4 @@ COPY . .
 EXPOSE 3000
 
 # Comando para iniciar com PM2
-CMD ["pm2-runtime", "pm2.config.js"]
+CMD ["pm2-runtime", "ecosystem.config.js"]

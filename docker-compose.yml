@@ -3,6 +3,8 @@ services:
     build: .
     container_name: gtm-checker-app
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       - mysql
       - redis
@@ -13,7 +15,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    command: pm2-runtime pm2.config.js
+    command: pm2-runtime ecosystem.config.js
 
   mysql:
     image: mysql:8.0
