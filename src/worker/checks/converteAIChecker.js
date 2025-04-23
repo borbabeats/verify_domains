@@ -16,10 +16,11 @@ async function checkConverteAI(page, domain) {
             converteAIFound = true;
             try {
                 const currentPagePathname = new URL(page.url()).pathname;
-                if (currentPagePathname === "/pv") pvVSLIDFound = url;
-                if (currentPagePathname === "/pve") pveVSLIDFound = url;
-                if (currentPagePathname === "/pva") pvaVSLIDFound = url;
-                if (currentPagePathname === "/pvb") pvbVSLIDFound = url;
+                const vslId = url.split("players/")[1].split("/")[0];
+                if (currentPagePathname === "/pv") pvVSLIDFound = vslId;
+                if (currentPagePathname === "/pve") pveVSLIDFound = vslId;
+                if (currentPagePathname === "/pva") pvaVSLIDFound = vslId;
+                if (currentPagePathname === "/pvb") pvbVSLIDFound = vslId;
             } catch (e) {
                 // Ignore URL parsing errors if page.url() is invalid during navigation/redirects
             }

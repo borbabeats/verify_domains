@@ -1,16 +1,12 @@
-FROM node:20
+FROM node:20-slim
 
 # Variáveis para não pedir confirmação durante instalação
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Instala dependências para Chrome e PM2
-RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    gnupg \
-    ca-certificates \
+# Instala dependências para Chromium e PM2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
     fonts-liberation \
-    libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -24,23 +20,23 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     xdg-utils \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Instala o Chrome
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get update \
-    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
-    && rm google-chrome-stable_current_amd64.deb
+# Define variável de ambiente para o Puppeteer usar o Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Cria diretório da aplicação
 WORKDIR /app
 
-# Copia e instala dependências do projeto
+# Copia package.json e package-lock.json
 COPY package*.json ./
-RUN npm install && npm run postinstall || true
 
-# Instala PM2 globalmente
-RUN npm install -g pm2
+# Instala dependências do projeto e PM2
+RUN npm ci \
+    && npm install -g pm2 \
+    && npm cache clean --force
 
 # Copia o restante da aplicação
 COPY . .
