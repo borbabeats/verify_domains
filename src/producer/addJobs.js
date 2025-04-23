@@ -2,9 +2,20 @@ const fs = require('fs');
 const path = require('path');
 // Caminho atualizado para a fila
 const gtmQueue = require('../queue/gtmQueue');
+const winston = require('winston');
 
 // Caminho atualizado para o arquivo de domínios
 const domainsFilePath = path.join(__dirname, '../../domains.json');
+
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+    transports: [new winston.transports.Console()],
+});
+
+const REPEATABLE_JOB_NAME = 'trigger-domain-recheck';
+const REPEATABLE_JOB_ID = 'domain-recheck-scheduler';
+const CRON_SCHEDULE = '*/10 * * * *'; // Every 10 minutes
 
 const addDomainsToQueue = async () => {
     try {
@@ -61,4 +72,47 @@ const addDomainsToQueue = async () => {
     }
 };
 
-addDomainsToQueue(); 
+const setupRepeatableJob = async () => {
+    try {
+        logger.info('Setting up repeatable job for domain recheck...');
+
+        // Obter todos os jobs repetíveis existentes para remover o antigo (se houver)
+        const repeatableJobs = await gtmQueue.getRepeatableJobs();
+        for (const job of repeatableJobs) {
+            if (job.id === REPEATABLE_JOB_ID || job.name === REPEATABLE_JOB_NAME) {
+                logger.info(`Removing existing repeatable job with key: ${job.key}`);
+                await gtmQueue.removeRepeatableByKey(job.key);
+            }
+        }
+
+        // Adiciona o novo job repetível
+        await gtmQueue.add(REPEATABLE_JOB_NAME, // Nome do job para o processador do worker
+            {}, // Dados do job (vazio neste caso, o processador sabe o que fazer)
+            {
+                jobId: REPEATABLE_JOB_ID, // ID único para este job repetível
+                repeat: { cron: CRON_SCHEDULE },
+                removeOnComplete: true, // Remove o job da fila após a conclusão do trigger
+                removeOnFail: true      // Remove se falhar
+            }
+        );
+
+        logger.info(`Repeatable job '${REPEATABLE_JOB_NAME}' scheduled with cron '${CRON_SCHEDULE}'.`);
+
+    } catch (error) {
+        logger.error('Error setting up repeatable job:', error);
+        // Não sair com process.exit(1) para não parar o container
+    } finally {
+        // Fecha a conexão com a fila após configurar o job
+        setTimeout(async () => {
+            try {
+                await gtmQueue.close();
+                logger.info('Scheduler setup queue connection closed.');
+            } catch (closeError) {
+                logger.error('Error closing scheduler setup queue connection:', closeError);
+            }
+        }, 2000);
+    }
+};
+
+addDomainsToQueue();
+setupRepeatableJob(); 
