@@ -1,7 +1,8 @@
 const puppeteer = require('puppeteer');
 const knex = require('../db/knex');
 const winston = require('winston'); // Para logging
-const { checkConverteAI } = require('./checks/converteAIChecker'); // Importar a nova função
+const { checkConverteAI } = require('./checks/converteAIChecker');
+const { checkCheckoutLinks } = require('./checks/checkoutChecker');//import new function
 
 // Configuração básica do Winston (pode ser melhorada)
 const logger = winston.createLogger({
@@ -18,7 +19,7 @@ const logger = winston.createLogger({
 
 const GTM_TABLE = 'domains_gtm_status';
 // Regex mais flexível: Procura pelo padrão GTM-XXXXXX em qualquer lugar do HTML
-const GTM_REGEX = /(GTM-[A-Z0-9]{6,})/i; // Procura por GTM- seguido por 6 ou mais caracteres alfanuméricos
+const GTM_REGEX = /(GTM-[A-Z0-9]{6,})/i;
 
 /**
  * Processa um job da fila, verificando o GTM em um domínio.
@@ -41,6 +42,18 @@ const processGtmCheck = async (job) => {
         pva: null,
         pvb: null,
         hasABTest: 'Not Checked' // Status inicial
+    };
+
+    let checkoutLinksResults = {
+        checkoutLinkPV: null,
+        checkoutLinkPVE: null,
+        checkoutLinkPVA: null,
+        checkoutLinkPVB: null,
+        checkoutPlatformPV: null,
+        checkoutPlatformPVE: null,
+        checkoutPlatformPVA: null,
+        checkoutPlatformPVB: null,
+        checkoutLinkFoundFromVTurb: false
     };
 
     try {
@@ -96,6 +109,11 @@ const processGtmCheck = async (job) => {
         converteAIResults = await checkConverteAI(page, fullDomainUrl);
         logger.info(`ConverteAI check completed for ${domain}. Found: ${converteAIResults.converteAIInstalled}, A/B Status: ${converteAIResults.hasABTest}`);
 
+        // --- Checkout Links Check ---
+        logger.info(`Starting Checkout Links check for ${domain}`);
+        checkoutLinksResults = await checkCheckoutLinks(page, fullDomainUrl);
+        logger.info(`Checkout Links check completed for ${domain}. Results: ${JSON.stringify(checkoutLinksResults)}`);
+
     } catch (error) {
         logger.error(`Error processing domain ${domain}: ${error.message}`, { stack: error.stack });
         // No caso de erro geral, garantir que os resultados ConverteAI tenham um status de erro
@@ -117,23 +135,45 @@ const processGtmCheck = async (job) => {
                     gtm_code: gtmCode,
                     // Novos campos ConverteAI
                     converteai_installed: converteAIResults.converteAIInstalled,
-                    converteai_pv_url: converteAIResults.pv,
-                    converteai_pve_url: converteAIResults.pve,
-                    converteai_pva_url: converteAIResults.pva,
-                    converteai_pvb_url: converteAIResults.pvb,
-                    converteai_ab_test_status: converteAIResults.hasABTest
+                    converteai_pv: converteAIResults.pv,
+                    converteai_pve: converteAIResults.pve,
+                    converteai_pva: converteAIResults.pva,
+                    converteai_pvb: converteAIResults.pvb,
+                    converteai_ab_test: converteAIResults.hasABTest,
+                    // Novos campos Checkout Links
+                    checkout_link_pv: checkoutLinksResults.checkoutLinkPV,
+                    checkout_link_pve: checkoutLinksResults.checkoutLinkPVE,
+                    checkout_link_pva: checkoutLinksResults.checkoutLinkPVA,
+                    checkout_link_pvb: checkoutLinksResults.checkoutLinkPVB,
+                    checkout_platform_pv: checkoutLinksResults.checkoutPlatformPV,
+                    checkout_platform_pve: checkoutLinksResults.checkoutPlatformPVE,
+                    checkout_platform_pva: checkoutLinksResults.checkoutPlatformPVA,
+                    checkout_platform_pvb: checkoutLinksResults.checkoutPlatformPVB,
+                    checkout_links_found: checkoutLinksResults.checkoutLinkFoundFromVTurb,
+                    created_at: new Date(),
+                    updated_at: new Date()
                 })
                 .onConflict('domain') // Se o domínio já existe...
                 .merge({ // ...atualiza os campos
                     gtm_installed: gtmInstalled,
                     gtm_code: gtmCode,
                     converteai_installed: converteAIResults.converteAIInstalled,
-                    converteai_pv_url: converteAIResults.pv,
-                    converteai_pve_url: converteAIResults.pve,
-                    converteai_pva_url: converteAIResults.pva,
-                    converteai_pvb_url: converteAIResults.pvb,
-                    converteai_ab_test_status: converteAIResults.hasABTest,
-                    updated_at: knex.fn.now() // Atualiza explicitamente o updated_at
+                    converteai_pv: converteAIResults.pv,
+                    converteai_pve: converteAIResults.pve,
+                    converteai_pva: converteAIResults.pva,
+                    converteai_pvb: converteAIResults.pvb,
+                    converteai_ab_test: converteAIResults.hasABTest,
+                    // Atualizar campos de Checkout Links
+                    checkout_link_pv: checkoutLinksResults.checkoutLinkPV,
+                    checkout_link_pve: checkoutLinksResults.checkoutLinkPVE,
+                    checkout_link_pva: checkoutLinksResults.checkoutLinkPVA,
+                    checkout_link_pvb: checkoutLinksResults.checkoutLinkPVB,
+                    checkout_platform_pv: checkoutLinksResults.checkoutPlatformPV,
+                    checkout_platform_pve: checkoutLinksResults.checkoutPlatformPVE,
+                    checkout_platform_pva: checkoutLinksResults.checkoutPlatformPVA,
+                    checkout_platform_pvb: checkoutLinksResults.checkoutPlatformPVB,
+                    checkout_links_found: checkoutLinksResults.checkoutLinkFoundFromVTurb,
+                    updated_at: new Date() // Atualiza explicitamente o updated_at
                 });
             logger.info(`Database update complete for ${domain}`);
         } catch (dbError) {
