@@ -127,7 +127,29 @@ const processGtmCheck = async (job) => {
 
         // Salvar ou atualizar no banco de dados
         try {
-            logger.info(`Saving results for ${domain} to database...`);
+            logger.info(`Data to save: ${JSON.stringify({
+                domain: domain,
+                gtm_installed: gtmInstalled,
+                gtm_code: gtmCode,
+                converteai_installed: converteAIResults.converteAIInstalled,
+                converteai_pv_url: converteAIResults.pv,
+                converteai_pve_url: converteAIResults.pve,
+                converteai_pva_url: converteAIResults.pva,
+                converteai_pvb_url: converteAIResults.pvb,
+                converteai_ab_test_status: converteAIResults.hasABTest,
+                converteai_ab_test_status: converteAIResults.hasABTest,
+                checkout_link_pv: checkoutLinksResults.checkoutLinkPV,
+                checkout_link_pve: checkoutLinksResults.checkoutLinkPVE,
+                checkout_link_pva: checkoutLinksResults.checkoutLinkPVA,
+                checkout_link_pvb: checkoutLinksResults.checkoutLinkPVB,
+                checkout_platform_pv: checkoutLinksResults.checkoutPlatformPV,
+                checkout_platform_pve: checkoutLinksResults.checkoutPlatformPVE,
+                checkout_platform_pva: checkoutLinksResults.checkoutPlatformPVA,
+                checkout_platform_pvb: checkoutLinksResults.checkoutPlatformPVB,
+                checkout_links_found: checkoutLinksResults.checkoutLinkFoundFromVTurb,
+                created_at: new Date(),
+                updated_at: new Date()
+            })}`);
             await knex(GTM_TABLE)
                 .insert({
                     domain: domain,
@@ -135,11 +157,11 @@ const processGtmCheck = async (job) => {
                     gtm_code: gtmCode,
                     // Novos campos ConverteAI
                     converteai_installed: converteAIResults.converteAIInstalled,
-                    converteai_pv: converteAIResults.pv,
-                    converteai_pve: converteAIResults.pve,
-                    converteai_pva: converteAIResults.pva,
-                    converteai_pvb: converteAIResults.pvb,
-                    converteai_ab_test: converteAIResults.hasABTest,
+                    converteai_pv_url: converteAIResults.pv,
+                    converteai_pve_url: converteAIResults.pve,
+                    converteai_pva_url: converteAIResults.pva,
+                    converteai_pvb_url: converteAIResults.pvb,
+                    converteai_ab_test_status: converteAIResults.hasABTest,
                     // Novos campos Checkout Links
                     checkout_link_pv: checkoutLinksResults.checkoutLinkPV,
                     checkout_link_pve: checkoutLinksResults.checkoutLinkPVE,
@@ -158,11 +180,11 @@ const processGtmCheck = async (job) => {
                     gtm_installed: gtmInstalled,
                     gtm_code: gtmCode,
                     converteai_installed: converteAIResults.converteAIInstalled,
-                    converteai_pv: converteAIResults.pv,
-                    converteai_pve: converteAIResults.pve,
-                    converteai_pva: converteAIResults.pva,
-                    converteai_pvb: converteAIResults.pvb,
-                    converteai_ab_test: converteAIResults.hasABTest,
+                    converteai_pv_url: converteAIResults.pv,
+                    converteai_pve_url: converteAIResults.pve,
+                    converteai_pva_url: converteAIResults.pva,
+                    converteai_pvb_url: converteAIResults.pvb,
+                    converteai_ab_test_status: converteAIResults.hasABTest,
                     // Atualizar campos de Checkout Links
                     checkout_link_pv: checkoutLinksResults.checkoutLinkPV,
                     checkout_link_pve: checkoutLinksResults.checkoutLinkPVE,
