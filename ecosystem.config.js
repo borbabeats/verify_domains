@@ -21,7 +21,7 @@ module.exports = {
             autorestart: false,
             watch: false,
             max_memory_restart: "256M",
-            restart_delay: 10000,
+            restart_delay: 20000,
             max_restarts: 0,
             env: {
                 NODE_ENV: "development",

@@ -22,13 +22,26 @@ class GTMParser {
       await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
 
       const gtmScriptExists = await page.evaluate(() => {
-        return (
-          document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]').length > 0
-        );
+        const hasGtmScript = document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]').length > 0;
+        
+        const scripts = Array.from(document.getElementsByTagName('script'));
+        const hasGtmInitScript = scripts.some(script => {
+          const content = script.textContent || script.innerText;
+          return content.includes('googletagmanager.com/gtm.js') || 
+                 content.includes('GTM-') ||
+                 content.includes('google_tag_manager');
+        });
+
+        const hasGtmIframe = document.querySelectorAll('iframe[src*="googletagmanager.com/ns.html"]').length > 0 ||
+                            document.querySelectorAll('noscript iframe[src*="googletagmanager.com/ns.html"]').length > 0;
+
+        return hasGtmScript || hasGtmInitScript || hasGtmIframe;
       });
 
       const gtmCode = await page.evaluate(() => {
-        const matches = document.documentElement.innerHTML.match(/GTM-[A-Z0-9]+/g);
+        const htmlContent = document.documentElement.innerHTML;
+        const matches = htmlContent.match(/GTM-[A-Z0-9]+/g) || 
+                       htmlContent.match(/googletagmanager\.com\/gtm\.js\?id=GTM-[A-Z0-9]+/g)?.map(url => url.match(/GTM-[A-Z0-9]+/)[0]);
         return matches ? matches[0] : null;
       });
 

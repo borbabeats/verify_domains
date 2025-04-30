@@ -9,13 +9,15 @@ services:
       - mysql
       - redis
     ports:
-      - "3000:3000"
+      - "3001:3001"
     volumes:
       - .:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
     command: pm2-runtime ecosystem.config.js
+    networks:
+      - gtm-checker-network
 
   mysql:
     image: mysql:8.0
@@ -34,6 +36,8 @@ services:
       - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      - gtm-checker-network
 
   redis:
     image: redis:6.2
@@ -42,7 +46,28 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - gtm-checker-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=adminteste
+      - GF_SECURITY_ADMIN_PASSWORD=adminteste
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - mysql
+    networks:
+      - gtm-checker-network
 
 volumes:
   mysql-data:
   redis-data:
+  grafana-storage:
+
+networks:
+  gtm-checker-network:
+    driver: bridge
