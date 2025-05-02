@@ -15,7 +15,7 @@ const logger = winston.createLogger({
 
 const REPEATABLE_JOB_NAME = 'trigger-domain-recheck';
 const REPEATABLE_JOB_ID = 'domain-recheck-scheduler';
-const CRON_SCHEDULE = '*/60 * * * *'; // Daily at 12 PM '0 12 * * *'
+const CRON_SCHEDULE = '0 12 * * *'; // Daily at 12 PM '0 12 * * *'
 
 const addDomainsToQueue = async () => {
     try {

@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: MySQL GTM Checker
+    type: mysql
+    access: proxy
+    url: gtm-checker-mysql:3306
+    database: gtm_checker
+    user: gtmuser
+    secureJsonData:
+      password: gtmpassword
+    jsonData:
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+    editable: true

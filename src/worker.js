@@ -17,55 +17,18 @@ const logger = winston.createLogger({
 });
 
 const CONCURRENCY = parseInt(process.env.WORKER_CONCURRENCY || '1', 10);
-const domainsFilePath = path.join(__dirname, '../domains.json'); // Caminho para domains.json
-const REPEATABLE_JOB_NAME = 'trigger-domain-recheck';
+const initDomainProcessing = require('./producer/addJobs');
 
-// Função para ler domains.json e adicionar jobs à fila GTM
-const addDomainsFromJSON = async () => {
-    logger.info(`Reading domains from: ${domainsFilePath} for scheduled check.`);
+// Função para inicializar o processamento de domínios
+const setupDomainProcessing = async () => {
     try {
-        if (!fs.existsSync(domainsFilePath)) {
-            logger.warn(`Domains file not found at ${domainsFilePath}. Skipping scheduled job addition.`);
-            return;
-        }
-        const domainsData = fs.readFileSync(domainsFilePath, 'utf-8');
-        const domains = JSON.parse(domainsData);
-
-        if (!Array.isArray(domains)) {
-            logger.error('domains.json should contain an array of domain strings.');
-            return;
-        }
-
-        if (domains.length === 0) {
-            logger.info('No domains found in domains.json. No scheduled jobs to add.');
-            return;
-        }
-
-        logger.info(`Found ${domains.length} domains. Adding to queue '${gtmQueue.name}' for recheck...`);
-
-        const jobPromises = domains.map(domain => {
-            if (typeof domain === 'string' && domain.trim() !== '') {
-                // Adiciona com o mesmo Job ID para possível substituição/atualização implícita
-                // ou apenas adiciona como novo job
-                return gtmQueue.add({ domain: domain.trim() }, {
-                    jobId: domain.trim(), // Usar domínio como ID pode sobrescrever jobs pendentes (se desejado)
-                    removeOnComplete: true,
-                    removeOnFail: 5
-                });
-            } else {
-                logger.warn(`Skipping invalid domain entry from domains.json: ${domain}`);
-                return null;
-            }
-        });
-
-        const results = await Promise.all(jobPromises.filter(p => p !== null));
-        logger.info(`Added/Updated ${results.length} domain jobs to the queue from scheduled check.`);
-
+        await initDomainProcessing();
     } catch (error) {
-        logger.error('Error reading domains.json or adding scheduled jobs to queue:', error);
+        logger.error('Error setting up domain processing:', error);
     }
-    // Não fechar a conexão gtmQueue aqui, pois o worker precisa dela ativa
 };
+
+setupDomainProcessing();
 
 logger.info(`Worker started. Waiting for jobs on queue '${gtmQueue.name}' with concurrency ${CONCURRENCY}...`);
 
